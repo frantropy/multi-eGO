@@ -79,7 +79,6 @@ def read_topol(path):
         if '\n' in line: line = line.replace('\n', '')
         line = line.strip()
         if Section.HEADER == section and line.startswith(';') or line.startswith('#'):
-            print(line)
             sections['header'].append(line)
         if line == '': continue
         if line.startswith(';'): continue
@@ -147,7 +146,7 @@ def read_topol(path):
     topol['improper_dihedrals'] = dihs_improper
     prs = pd.DataFrame([ x.split() for x in sections['pairs'] ])
     prs.columns = ['ai', 'aj', 'func', 'c6', 'c12', ';', 'probability', 'rc_probability', 'source']
-    prs = prs.drop(columns=[';'])
+    # prs = prs.drop(columns=[';'])
     prs.astype({'ai': int, 'aj': int, 'func': int, 'c6': float, 'c12': float, 'probability': float, 'rc_probability': float, 'source': str})
     topol['pairs'] = prs
     exc = pd.DataFrame([ x.split() for x in sections['exclusions'] ])
@@ -196,6 +195,8 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
     num_mapper = {k: v for k, v in zip(atoms['number'], atoms['number_mut'])}
     atoms['number'] = atoms['number_mut']
     atoms = atoms.drop(columns=['number_mut'])
+    atoms['sb_type'] = atoms['sb_type_mut']
+    atoms = atoms.drop(columns=['sb_type_mut'])
     topol['atoms'] = atoms
 
     # map all indices in topology to new indices
@@ -319,9 +320,11 @@ def write_topology(topol, output_dir):
         f.write('[ exclusions ]\n; ')
         f.write(topol['exclusions'].to_string(index=False))
         f.write('\n\n')
+        f.write('[ system ]\n')
         for line in topol['system']:
             f.write(f'{line}\n')
         f.write('\n\n')
+        f.write('[ molecules ]\n')
         for line in topol['molecules']:
             f.write(f'{line}\n')
         f.write('\n')
