@@ -3,6 +3,19 @@ import numpy as np
 import argparse
 
 def read_ffnonbonded(path):
+    '''
+    Read the ffnonbonded.itp file and create a dataframe with the data
+
+    Parameters
+    ----------
+    path : str
+        The path to the ffnonbonded.itp file
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        The dataframe with the data
+    '''
     with open(path, 'r') as f:
         lines = f.readlines()
 
@@ -24,7 +37,24 @@ def read_ffnonbonded(path):
 
     return df
 
-def read_alignment(path, n_domains, sections):
+def read_alignment(path, sections):
+    '''
+    Read the alignment file and create a dataframe with the alignment and the sections
+
+    Parameters
+    ----------
+    path : str
+        The path to the alignment file
+
+    sections : list of tuples
+        The sections of the protein sequence that correspond to each domain
+    
+    Returns
+    -------
+    df : pandas.DataFrame
+        The dataframe with the alignment and the sections
+    '''
+    n_domains = len(sections)
     with open(path, 'r') as f:
         lines = f.readlines()
     lines = lines[3:]
@@ -54,6 +84,19 @@ def read_alignment(path, n_domains, sections):
     return df
 
 def recuperate_header(path):
+    '''
+    Recuperate the header of the ffnonbonded.itp file
+    
+    Parameters
+    ----------
+    path : str
+        The path to the original ffnonbonded.itp file
+
+    Returns
+    -------
+    header : str
+        The header of the ffnonbonded.itp file
+    '''
     with open(path, 'r') as f:
         lines = f.readlines()
     header = lines[:lines.index('[ nonbond_params ]\n')]
@@ -61,6 +104,22 @@ def recuperate_header(path):
     return header
 
 def symmetrize_ffnonbonded(ffnb, pairs):
+    '''
+    Symmetrize the ffnonbonded.itp file according to the alignment file and the sections
+
+    Parameters
+    ----------
+    ffnb : pandas.DataFrame
+        The ffnonbonded dataframe
+
+    pairs : numpy.ndarray
+        The pairs of residues to symmetrize
+
+    Returns
+    -------
+    ffnb : pandas.DataFrame
+        The symmetrized ffnonbonded dataframe
+    '''
     ffnb_sym = pd.DataFrame(columns=ffnb.columns)
     ffnb['sym'] = 'no'
     sbtype_to_number = { x[0]: int(x[1]) for x in ffnb[['ai', 'number_ai']].to_numpy() }
@@ -122,7 +181,49 @@ def symmetrize_ffnonbonded(ffnb, pairs):
 
     return ffnb
 
+def sort_ffnb(ffnb):
+    '''
+    Sort the ffnonbonded.itp file by atomtypes
+
+    Parameters
+    ----------
+    ffnb : pandas.DataFrame
+        The ffnonbonded dataframe
+
+    Returns
+    -------
+    ffnb : pandas.DataFrame
+        The sorted ffnonbonded dataframe
+    '''
+    ffnb['sort_ai'] = [ int(x.split('_')[2]) for x in ffnb['ai'] ]
+    ffnb['sort_aj'] = [ int(x.split('_')[2]) for x in ffnb['aj'] ]
+
+    ffnb['swap'] = ffnb['sort_ai'] > ffnb['sort_aj']
+    ffnb.loc[ffnb['swap'] == True, 'ai'], ffnb.loc[ffnb['swap'] == True, 'aj'] = ffnb.loc[ffnb['swap'] == True, 'aj'], ffnb.loc[ffnb['swap'] == True, 'ai']
+    
+    ffnb = ffnb.drop(columns=['swap'])
+    ffnb = ffnb.sort_values(by=['sort_ai', 'sort_aj', 'ai', 'aj'])
+    ffnb = ffnb.drop(columns=['sort_ai', 'sort_aj'])
+
+    return ffnb
+
 def check_att_presence(ffnb_header, ffnb_data):
+    '''
+    Check if all atomtypes in [ nonbond_params ] are present in [ atomtypes ]
+
+    Parameters
+    ----------
+    ffnb_header : str
+        The header of the ffnonbonded.itp file
+
+    ffnb_data : str
+        The data of the ffnonbonded.itp file
+
+    Returns
+    -------
+    True : bool
+        If all atomtypes in [ nonbond_params ] are present in [ atomtypes ]
+    '''
     header_lines = ffnb_header.split('\n')
     ffnb_lines = ffnb_data.split('\n')
 
@@ -160,26 +261,62 @@ def check_att_presence(ffnb_header, ffnb_data):
 
     return True
 
+def remove_intra_sym(ffnb, sections):
+    '''
+    Remove intra-domain interactions that resulted from the symmetrization process
+
+    Parameters
+    ----------
+    ffnb : pandas.DataFrame
+        The ffnonbonded dataframe
+
+    sections : list of tuples
+        The sections of the protein sequence that correspond to each domain
+
+    Returns
+    -------
+    ffnb : pandas.DataFrame
+        The ffnonbonded dataframe without intra-domain interactions
+    '''
+
+    ffnb['ri'] = [ int(x[2]) for x in ffnb['ai'].str.split('_') ]
+    ffnb['rj'] = [ int(x[2]) for x in ffnb['aj'].str.split('_') ]
+    ffnb = sort_ffnb(ffnb)
+    ffnb['intra_domain'] = False
+    for section in sections:
+        ffnb.loc[(ffnb['ri'] >= section[0]) & (ffnb['rj'] <= section[1]), 'intra_domain'] = True
+        ffnb.loc[(ffnb['ri'] <= section[0]) & (ffnb['rj'] >= section[1]), 'intra_domain'] = True
+    ffnb = ffnb.loc[(ffnb['sym'] == 'no') | (ffnb['intra_domain'] == False)]
+    ffnb = ffnb.drop(columns=['ri', 'rj', 'intra_domain'])
+
+    return ffnb
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--ffnonbonded', type=str, help='path to ffnonbonded.itp', required=True)
     parser.add_argument('--alignment', type=str, help='path to clustalw alignment file', required=True)
     parser.add_argument('--output', default='ffnonbonded.itp', type=str, help='path to output file', required=True)
     parser.add_argument('--sections', help='sections to symmetrize (i.e.: 1:40,41:50)', required=True)
+    parser.add_argument('--no_intra', action='store_true', help='do not symmetrize intra-domain interactions')
     args = parser.parse_args()
 
+    # check args section for proper format
+    if not all([ x.split(':')[0].isdigit() and x.split(':')[0].isdigit() and len(x.split(':'))==2 for x in args.sections.split(',') ]):
+        raise ValueError(f'Error: --sections argument must be in the form of 1:40,41:50,51:60,61:70')
     args.sections = [ ( int(x.split(':')[0]), int(x.split(':')[1]) ) for x in args.sections.split(',') ]
     n_domains = len(args.sections)
-    header = recuperate_header(args.ffnonbonded) 
+    header = recuperate_header(args.ffnonbonded)
     ffnb = read_ffnonbonded(args.ffnonbonded)
-    alignment = read_alignment(args.alignment, n_domains, args.sections)
+    alignment = read_alignment(args.alignment, args.sections)
 
     alignment['symmetrize'] = alignment['alignment'] == '*'
     sym_pairs = alignment[alignment['symmetrize'] == True][[ f'domain_{i+1}_index' for i in range(n_domains) ]].to_numpy()
 
     print(alignment.to_string())
     ffnb_sym = symmetrize_ffnonbonded(ffnb, sym_pairs)
-    ffnb_sym.to_csv(args.output, sep='\t', index=False)
+    ffnb_sym = sort_ffnb(ffnb_sym)
+
+    if args.no_intra: ffnb_sym = remove_intra_sym(ffnb_sym, args.sections)
 
     check_att_presence(''.join(header), ffnb_sym.to_string(index=False))
 
