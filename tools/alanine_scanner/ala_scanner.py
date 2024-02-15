@@ -174,6 +174,10 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
     mutation_site = atoms[(atoms['resnum'] == resi)]['resname'].unique()[0]
     print(f'Mutation will be form {mutation_site}_{resi} to ALA_{resi}')
     
+    topol['dihedrals']['ai'] = topol['dihedrals']['ai'].astype(int)
+    topol['dihedrals']['aj'] = topol['dihedrals']['aj'].astype(int)
+    topol['dihedrals']['ak'] = topol['dihedrals']['ak'].astype(int)
+    topol['dihedrals']['al'] = topol['dihedrals']['al'].astype(int)
     # get indices of atoms to remove
     indices = atoms[(atoms['resnum'] == resi) & (
         ~(atoms['sb_type'].str.startswith('N_'))
@@ -192,6 +196,28 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
         )) |
         ((atoms['resnum'] == resi + 1) & (atoms['sb_type'].str.startswith('N_')))
     ]['number'].values
+
+    if mutation_site == 'PRO':
+        # remove N-CA-CB-CG dihedral
+        pro_indices = atoms[
+            ((atoms['resnum'] == resi) & (
+            (atoms['sb_type'].str.startswith('N_'))
+            | (atoms['sb_type'].str.startswith('CA_'))
+            | (atoms['sb_type'].str.startswith('CB_'))
+            | (atoms['sb_type'].str.startswith('CG_'))
+            | (atoms['sb_type'].str.startswith('CD_'))
+            )) |
+            ((atoms['resnum'] == resi + 1) & (
+            (atoms['sb_type'].str.startswith('CA_'))
+            | (atoms['sb_type'].str.startswith('C_'))
+            )) 
+        ]['number'].values
+        print(topol['dihedrals']['ai'])
+        print(f'pro_indices: {pro_indices}')
+        topol['dihedrals'] = topol['dihedrals'][~((topol['dihedrals']['ai'] == pro_indices[0]) & (topol['dihedrals']['aj'] == pro_indices[1]) & (topol['dihedrals']['ak'] == pro_indices[2]) & (topol['dihedrals']['al'] == pro_indices[3]))]
+        topol['dihedrals'] = topol['dihedrals'][~((topol['dihedrals']['ai'] == pro_indices[1]) & (topol['dihedrals']['aj'] == pro_indices[2]) & (topol['dihedrals']['ak'] == pro_indices[3]) & (topol['dihedrals']['al'] == pro_indices[4]))]
+        topol['dihedrals'] = topol['dihedrals'][~((topol['dihedrals']['ai'] == pro_indices[2]) & (topol['dihedrals']['aj'] == pro_indices[3]) & (topol['dihedrals']['ak'] == pro_indices[4]) & (topol['dihedrals']['al'] == pro_indices[0]))]
+        topol['dihedrals'] = topol['dihedrals'][~((topol['dihedrals']['ai'] == pro_indices[5]) & (topol['dihedrals']['aj'] == pro_indices[6]) & (topol['dihedrals']['ak'] == pro_indices[0]) & (topol['dihedrals']['al'] == pro_indices[1]))]
 
     # remove atoms from topology
     topol['header'] = [f'; mutated topology generated with {sys.argv[0]}', 
@@ -234,11 +260,37 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
     topol['angles']['ai'] = topol['angles']['ai'].map(num_mapper)
     topol['angles']['aj'] = topol['angles']['aj'].map(num_mapper)
     topol['angles']['ak'] = topol['angles']['ak'].map(num_mapper)
+    # switch dihedral parameters of the mutated residue to ALA
+    if indices_dih.size == 5:
+        print(f'Mutating dihedral parameters for {sysname}_{resi} to ALA_{resi} for indices {indices_dih}')
+        # drop all dihedrals that will be mutated
+        topol['dihedrals'] = topol['dihedrals'][~((topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]))]
+        topol['dihedrals'] = topol['dihedrals'][~((topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]))]
+        
+        # add new dihedrals
+        topol['dihedrals'] = pd.concat([topol['dihedrals'], pd.DataFrame({
+            'ai': indices_dih[1], 'aj': indices_dih[2], 'ak': indices_dih[3], 'al': indices_dih[4],
+            'func': 1, 'phase': dih_dict['gd_42']['phase'], 'phi_k': dih_dict['gd_42']['phi_k'], 'per': dih_dict['gd_42']['per']
+        }, index=[0])], ignore_index=True)
+        topol['dihedrals'] = pd.concat([topol['dihedrals'], pd.DataFrame({
+            'ai': indices_dih[0], 'aj': indices_dih[1], 'ak': indices_dih[2], 'al': indices_dih[3],
+            'func': 1, 'phase': dih_dict['gd_43']['phase'], 'phi_k': dih_dict['gd_43']['phi_k'], 'per': dih_dict['gd_43']['per']
+        }, index=[0])], ignore_index=True)
+        topol['dihedrals'] = pd.concat([topol['dihedrals'], pd.DataFrame({
+            'ai': indices_dih[0], 'aj': indices_dih[1], 'ak': indices_dih[2], 'al': indices_dih[3],
+            'func': 1, 'phase': dih_dict['gd_44']['phase'], 'phi_k': dih_dict['gd_44']['phi_k'], 'per': dih_dict['gd_44']['per']
+        }, index=[0])], ignore_index=True)
+        topol['dihedrals'] = pd.concat([topol['dihedrals'], pd.DataFrame({
+            'ai': indices_dih[1], 'aj': indices_dih[2], 'ak': indices_dih[3], 'al': indices_dih[4],
+            'func': 1, 'phase': dih_dict['gd_45']['phase'], 'phi_k': dih_dict['gd_45']['phi_k'], 'per': dih_dict['gd_45']['per']
+        }, index=[0])], ignore_index=True)
+        # sort dihedrals
+        topol['dihedrals'] = topol['dihedrals'].sort_values(by=['ai', 'aj', 'ak', 'al'])
+    else:
+        print(f'WARNING: Could not find all dihedral indices for {sysname}_{resi} in topology')
+        print('This could be due to the residue being at the start or end of the protein. Otherwise this should be considered an error.')
+    
     # map dihedrals
-    topol['dihedrals']['ai'] = topol['dihedrals']['ai'].astype(int)
-    topol['dihedrals']['aj'] = topol['dihedrals']['aj'].astype(int)
-    topol['dihedrals']['ak'] = topol['dihedrals']['ak'].astype(int)
-    topol['dihedrals']['al'] = topol['dihedrals']['al'].astype(int)
     topol['dihedrals'] = topol['dihedrals'][~topol['dihedrals']['ai'].isin(indices)]
     topol['dihedrals'] = topol['dihedrals'][~topol['dihedrals']['aj'].isin(indices)]
     topol['dihedrals'] = topol['dihedrals'][~topol['dihedrals']['ak'].isin(indices)]
@@ -247,25 +299,6 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
     topol['dihedrals']['aj'] = topol['dihedrals']['aj'].map(num_mapper)
     topol['dihedrals']['ak'] = topol['dihedrals']['ak'].map(num_mapper)
     topol['dihedrals']['al'] = topol['dihedrals']['al'].map(num_mapper)
-    # switch dihedral parameters of the mutated residue to ALA
-    if indices_dih.size == 5:
-        print(f'Mutating dihedral parameters for {sysname}_{resi} to ALA_{resi} for indices {indices_dih}')
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phase'] = dih_dict['gd_42']['phase']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phi_k'] = dih_dict['gd_42']['phi_k']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'per'] = dih_dict['gd_42']['per']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phase'] = dih_dict['gd_43']['phase']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phi_k'] = dih_dict['gd_43']['phi_k']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'per'] = dih_dict['gd_43']['per']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phase'] = dih_dict['gd_44']['phase']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phi_k'] = dih_dict['gd_44']['phi_k']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'per'] = dih_dict['gd_44']['per']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phase'] = dih_dict['gd_45']['phase']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phi_k'] = dih_dict['gd_45']['phi_k']
-        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'per'] = dih_dict['gd_45']['per']
-    else:
-        print(f'WARNING: Could not find all dihedral indices for {sysname}_{resi} in topology')
-        print('This could be due to the residue being at the start or end of the protein. Otherwise this should be considered an error.')
-
     # map improper dihedrals
     topol['improper_dihedrals']['ai'] = topol['improper_dihedrals']['ai'].astype(int)
     topol['improper_dihedrals']['aj'] = topol['improper_dihedrals']['aj'].astype(int)
