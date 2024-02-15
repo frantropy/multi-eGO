@@ -13,6 +13,13 @@ c12_mapper = { k: v for k, v in zip(type_definitions.gromos_atp['name'], type_de
 ALA_CB_C12 = c12_mapper['CH3']
 ALA_CB_MASS = 15.0350
 
+dih_dict = {
+    'gd_42': {'phase': 170.0000, 'phi_k': 2.7000, 'per': 2}, # Backbone dihedral angle -N-CA-C-N- ALA/SER/THR
+    'gd_43': {'phase': 15.0000, 'phi_k': 2.500, 'per': 3}, # ; Backbone dihedral angle -C-N-CA-C- ALA/SER/THR
+    'gd_44': {'phase': 180.000, 'phi_k': 4.00, 'per': 1}, # ; Backbone dihedral angle -C-N-CA-C- ALA/SER/THR
+    'gd_45': {'phase': -105.00, 'phi_k': 0.2200, 'per': 1} # Backbone dihedral angle -N-CA-C-N- ALA/SER/THR
+}
+
 class Section(enum.Enum):
     HEADER = 0
     ATOMS = 1
@@ -176,6 +183,15 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
         & ~(atoms['sb_type'].str.startswith('CB_'))
         )
     ]['number'].values
+    indices_dih = atoms[
+        ((atoms['resnum'] == resi - 1) & (atoms['sb_type'].str.startswith('C_'))) | 
+        ((atoms['resnum'] == resi) & (
+        (atoms['sb_type'].str.startswith('N_'))
+        | (atoms['sb_type'].str.startswith('CA_'))
+        | (atoms['sb_type'].str.startswith('C_'))
+        )) |
+        ((atoms['resnum'] == resi + 1) & (atoms['sb_type'].str.startswith('N_')))
+    ]['number'].values
 
     # remove atoms from topology
     topol['header'] = [f'; mutated topology generated with {sys.argv[0]}', 
@@ -231,6 +247,38 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
     topol['dihedrals']['aj'] = topol['dihedrals']['aj'].map(num_mapper)
     topol['dihedrals']['ak'] = topol['dihedrals']['ak'].map(num_mapper)
     topol['dihedrals']['al'] = topol['dihedrals']['al'].map(num_mapper)
+    # switch dihedral parameters of the mutated residue to ALA
+    if indices_dih.size == 5:
+        print(f'Mutating dihedral parameters for {sysname}_{resi} to ALA_{resi} for indices {indices_dih}')
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phase'] = dih_dict['gd_42']['phase']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phi_k'] = dih_dict['gd_42']['phi_k']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'per'] = dih_dict['gd_42']['per']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phase'] = dih_dict['gd_43']['phase']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phi_k'] = dih_dict['gd_43']['phi_k']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'per'] = dih_dict['gd_43']['per']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phase'] = dih_dict['gd_44']['phase']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'phi_k'] = dih_dict['gd_44']['phi_k']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[0]) & (topol['dihedrals']['aj'] == indices_dih[1]) & (topol['dihedrals']['ak'] == indices_dih[2]) & (topol['dihedrals']['al'] == indices_dih[3]), 'per'] = dih_dict['gd_44']['per']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phase'] = dih_dict['gd_45']['phase']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'phi_k'] = dih_dict['gd_45']['phi_k']
+        topol['dihedrals'].loc[(topol['dihedrals']['ai'] == indices_dih[1]) & (topol['dihedrals']['aj'] == indices_dih[2]) & (topol['dihedrals']['ak'] == indices_dih[3]) & (topol['dihedrals']['al'] == indices_dih[4]), 'per'] = dih_dict['gd_45']['per']
+    else:
+        print(f'WARNING: Could not find all dihedral indices for {sysname}_{resi} in topology')
+        print('This could be due to the residue being at the start or end of the protein. Otherwise this should be considered an error.')
+
+    # map improper dihedrals
+    topol['improper_dihedrals']['ai'] = topol['improper_dihedrals']['ai'].astype(int)
+    topol['improper_dihedrals']['aj'] = topol['improper_dihedrals']['aj'].astype(int)
+    topol['improper_dihedrals']['ak'] = topol['improper_dihedrals']['ak'].astype(int)
+    topol['improper_dihedrals']['al'] = topol['improper_dihedrals']['al'].astype(int)
+    topol['improper_dihedrals'] = topol['improper_dihedrals'][~topol['improper_dihedrals']['ai'].isin(indices)]
+    topol['improper_dihedrals'] = topol['improper_dihedrals'][~topol['improper_dihedrals']['aj'].isin(indices)]
+    topol['improper_dihedrals'] = topol['improper_dihedrals'][~topol['improper_dihedrals']['ak'].isin(indices)]
+    topol['improper_dihedrals'] = topol['improper_dihedrals'][~topol['improper_dihedrals']['al'].isin(indices)]
+    topol['improper_dihedrals']['ai'] = topol['improper_dihedrals']['ai'].map(num_mapper)
+    topol['improper_dihedrals']['aj'] = topol['improper_dihedrals']['aj'].map(num_mapper)
+    topol['improper_dihedrals']['ak'] = topol['improper_dihedrals']['ak'].map(num_mapper)
+    topol['improper_dihedrals']['al'] = topol['improper_dihedrals']['al'].map(num_mapper)
     # map pairs
     topol['pairs']['ai'] = topol['pairs']['ai'].astype(int)
     topol['pairs']['aj'] = topol['pairs']['aj'].astype(int)
