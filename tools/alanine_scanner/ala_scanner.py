@@ -207,7 +207,7 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
             | (atoms['sb_type'].str.startswith('CG_'))
             | (atoms['sb_type'].str.startswith('CD_'))
             )) |
-            ((atoms['resnum'] == resi + 1) & (
+            ((atoms['resnum'] == resi - 1) & (
             (atoms['sb_type'].str.startswith('CA_'))
             | (atoms['sb_type'].str.startswith('C_'))
             )) 
