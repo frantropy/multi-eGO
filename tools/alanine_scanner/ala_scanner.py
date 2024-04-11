@@ -229,6 +229,8 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
         & ~(atoms['sb_type'].str.startswith('CA_'))
         & ~(atoms['sb_type'].str.startswith('C_'))
         & ~(atoms['sb_type'].str.startswith('O_'))
+        & ~(atoms['sb_type'].str.startswith('O1_'))
+        & ~(atoms['sb_type'].str.startswith('O2_'))
     ), 'sb_type_mut'] = np.nan
     print(f'Removing {np.sum(atoms["sb_type_mut"].isna())} atoms from topology')
     atoms = atoms.dropna()
@@ -338,6 +340,8 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
         & ~(ffnb_mut['ai'].str.startswith('CA_'))
         & ~(ffnb_mut['ai'].str.startswith('C_'))
         & ~(ffnb_mut['ai'].str.startswith('O_'))
+        & ~(ffnb_mut['ai'].str.startswith('O1_'))
+        & ~(ffnb_mut['ai'].str.startswith('O2_'))
     ), 'ai'] = np.nan
     ffnb_mut.loc[(ffnb_mut['aj'].str.split('_').str[2] == str(resi)) & (
         ~(ffnb_mut['aj'].str.startswith('CB_'))
@@ -345,6 +349,8 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
         & ~(ffnb_mut['aj'].str.startswith('CA_'))
         & ~(ffnb_mut['aj'].str.startswith('C_'))
         & ~(ffnb_mut['aj'].str.startswith('O_'))
+        & ~(ffnb_mut['aj'].str.startswith('O1_'))
+        & ~(ffnb_mut['aj'].str.startswith('O2_'))
     ), 'aj'] = np.nan
     print(f'Removing {np.sum(ffnb_mut["ai"].isna()) + np.sum(ffnb_mut["aj"].isna())} interactions from ffnb')
     ffnb_mut = ffnb_mut.dropna()
@@ -357,6 +363,8 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
         & ~(att_mut['sb_type'].str.startswith('CA_'))
         & ~(att_mut['sb_type'].str.startswith('C_'))
         & ~(att_mut['sb_type'].str.startswith('O_'))
+        & ~(att_mut['sb_type'].str.startswith('O1_'))
+        & ~(att_mut['sb_type'].str.startswith('O2_'))
     ), 'sb_type'] = np.nan
     print(f'Removing {np.sum(att_mut["sb_type"].isna())} atoms from ffnonbonded')
     att_mut = att_mut.dropna()
