@@ -31,6 +31,8 @@ ala_filter = (structure.res_id == resid) \
     & (structure.atom_name != 'CB') \
     & (structure.atom_name != 'C') \
     & (structure.atom_name != 'O') \
-    & (structure.atom_name != 'N')
+    & (structure.atom_name != 'N') \
+    & (structure.atom_name != 'O1') \
+    & (structure.atom_name != 'O2')
 structure = structure[~ala_filter]
 strucio.save_structure(args.output, structure)
