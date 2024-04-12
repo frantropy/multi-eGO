@@ -185,6 +185,8 @@ def mutate_residue(topol, att, ffnb, resi, sysname):
         & ~(atoms['sb_type'].str.startswith('C_'))
         & ~(atoms['sb_type'].str.startswith('O_'))
         & ~(atoms['sb_type'].str.startswith('CB_'))
+        & ~(atoms['sb_type'].str.startswith('O1_'))
+        & ~(atoms['sb_type'].str.startswith('O2_'))
         )
     ]['number'].values
     indices_dih = atoms[
