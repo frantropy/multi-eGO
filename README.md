@@ -26,7 +26,7 @@ Multi-*e*GO force fields and tools are intended to be used with [GROMACS](https:
 You will need to know how to compile GROMACS from source, as some multi-eGO tools require GROMACS to be recompiled.
 
 ## Multi-_e_GO graphical user interface (meGUI)
-If you want to try multi-_e_GO without having to commit to the installation process, you can try out our examples and even your own with our graphical user interface *meGUI* [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/frantropy/multi-eGO/blob/main/Multi_eGO_colab.ipynb).
+If you want to try multi-*e*GO without having to commit to the installation process, you can try out our examples and even your own with our graphical user interface **meGUI** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/frantropy/multi-eGO/blob/main/Multi_eGO_colab.ipynb).
 
 ## Installation
 Use ```conda``` and the environment file provided as
