@@ -23,9 +23,9 @@ Original version by Emanuele Scalone, Cristina Paissoni, and Carlo Camilloni, [C
 
 ## Requirements
 Multi-*e*GO force fields and tools are intended to be used with [GROMACS](https://www.gromacs.org), currently suggested versions are 2023 and 2024.
-You will need to know how to compile GROMACS from source, as some multi-eGO tools require GROMACS to be recompiled.
+You will need to know how to compile GROMACS from source, as some multi-*e*GO tools require GROMACS to be recompiled.
 
-## Multi-_e_GO graphical user interface (meGUI)
+## Multi-*e*GO graphical user interface (meGUI)
 If you want to try multi-*e*GO without having to commit to the installation process, you can try out our examples and even your own with our graphical user interface **meGUI** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/frantropy/multi-eGO/blob/main/Multi_eGO_colab.ipynb).
 
 ## Installation
@@ -39,10 +39,10 @@ It is also possible to use ``pip install -r requirements.txt``.
 To install the `cmdata` see [here](tools/cmdata/README.md)
 
 ## Usage
-- [Preparing your first multi-eGO system](#preparing-your-first-multi-ego-system)
+- [Preparing your first multi-*e*GO system](#preparing-your-first-multi-ego-system)
 - [Analysis of a training simulation](#analysis-of-a-training-simulation)
 - [Setup of a multi-*e*GO random coil simulation](#setup-of-a-multi-ego-random-coil-simulation)
-- [Setup of a multi-eGO production simulation](#setup-of-a-multi-ego-production-simulation)
+- [Setup of a multi-*e*GO production simulation](#setup-of-a-multi-ego-production-simulation)
 
 ![Image](img/mego_workflow_black.png)
 
