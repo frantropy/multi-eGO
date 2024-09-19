@@ -1072,7 +1072,6 @@ def generate_basic_LJ(meGO_ensemble, args):
                 ("CH1", "CH1"),
                 ("CH1", "C"),
                 ("CH1", "N"),
-                ("CH1", "S"),
                 ("CH1", "CH"),
                 ("CH1", "CH2"),
                 ("CH1", "CH2r"),
@@ -1209,8 +1208,8 @@ def generate_basic_LJ(meGO_ensemble, args):
         basic_LJ["residue_aj"] = basic_LJ["aj"].apply(get_residue_number)
         basic_LJ.loc[oxygen_mask, "c12"] *= 11.4
         basic_LJ.loc[oxygen_mask, "c6"] = 0.0
-        basic_LJ.loc[~oxygen_mask, "c12"] = 0.195 * basic_LJ["rep"]
-        basic_LJ.loc[~oxygen_mask, "c6"] = 0.195 * basic_LJ["att"]
+        basic_LJ.loc[~oxygen_mask, "c12"] = 0.175 * basic_LJ["rep"]
+        basic_LJ.loc[~oxygen_mask, "c6"] = 0.175 * basic_LJ["att"]
         basic_LJ_14 = basic_LJ.copy()
         basic_LJ_14 = basic_LJ_14[(~oxygen_mask & ~ca_mask)]
         basic_LJ_14 = basic_LJ_14.loc[
